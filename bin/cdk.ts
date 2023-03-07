@@ -21,4 +21,4 @@ const inflaStack = new AppStack(app, 'inflaStack', {
 const appStack = new AppStack(app, 'appStack', {
   env:env
 });
-appStack.node.addDependency(networkStack)
+//appStack.node.addDependency(networkStack);

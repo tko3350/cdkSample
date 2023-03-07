@@ -29,6 +29,7 @@ export class AppStack extends cdk.Stack {
       func2: 'func02',
       func3: 'func03',
       func4: 'func04',
+      func5: 'func05',
     };
     
     const vpc1 = ec2.Vpc.fromLookup(this,"vpc1",{vpcId:vpc});

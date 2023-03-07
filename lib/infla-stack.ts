@@ -9,16 +9,21 @@ import { Construct } from 'constructs';
 export class InflaStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-    const vpc = ssm.StringParameter.FromLookup(this, 'vpc');
+    const vpc = ssm.StringParameter.valueFromLookup(this, 'vpc');
+    const vpc1 = ec2.Vpc.fromLookup(this,'vpc1',{vpcId:vpc});
     const prisub1a = ssm.StringParameter.valueForStringParameter(this, 'prisub1a');
     const prisub1c = ssm.StringParameter.valueForStringParameter(this, 'prisub1c');
-
+    const vpcsubnets = [
+      ec2.Subnet.fromSubnetId(this,"vprisub1a",prisub1a),
+      ec2.Subnet.fromSubnetId(this,"vprisub1c",prisub1c),
+    ]
+    /*
     // ******************************************************************************
     //                                    EC2                                
     // ******************************************************************************
     // ******************* Security Group for ec2 **********************************
     const sgec2 = new ec2.SecurityGroup(this,'sgec2',{
-      vpc:vpc,
+      vpc:vpc1,
       allowAllOutbound:true,
     });
     sgec2.addIngressRule(ec2.Peer.ipv4('10.10.10.0/24'),ec2.Port.tcp(22))
@@ -28,15 +33,15 @@ export class InflaStack extends cdk.Stack {
     });
     // ******************* ec2 **********************************
     const image = new ec2.AmazonLinuxImage()
-    new ec2.Instance(this,'prd-ec2-personalEvaluation-DBConsole',{
-    vpc:vpc,
+    new ec2.Instance(this,'ec2',{
+    vpc:vpc1,
     availabilityZone:'ap-northeast-1a',
-    vpcSubnets:{subnets:pubsub1a_s.subnets},
+    vpcSubnets:{subnets:vpcsubnets},
     securityGroup:sgec2,
     keyName:cdk.Token.asString(key.ref),
     instanceType:ec2.InstanceType.of(ec2.InstanceClass.T2,ec2.InstanceSize.MICRO),
     machineImage:image,
-    instanceName:'prd-ec2-personalEvaluation-DBConsole'
+    instanceName:'ec2'
     });
 
     // ******************************************************************************
@@ -44,16 +49,16 @@ export class InflaStack extends cdk.Stack {
     // ******************************************************************************
     const subnetGroup = new rds.CfnDBSubnetGroup(this, 'SubnetGroupRds', {
       dbSubnetGroupDescription: 'Subnet Group for RDS',
-      subnetIds: [prisub1a.subnetId,prisub1c.subnetId],
+      subnetIds:[prisub1a,prisub1c],
       dbSubnetGroupName: 'SubnetGroupRds',
     });
     const engine = rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_31});
-    const db = new rds.DatabaseInstance(this,"prd-rds-personalEvaluation",{
+    const db = new rds.DatabaseInstance(this,"rds",{
       engine: engine,
       allocatedStorage:20,
       maxAllocatedStorage:22,
-      vpc:vpc,
-      vpcSubnets:{subnets:prisub1a_s.subnets},
+      vpc:vpc1,
+      vpcSubnets:{subnets:vpcsubnets},
       availabilityZone:'ap-northeast-1a',
       subnetGroup:rds.SubnetGroup.fromSubnetGroupName(this, id, 'SubnetGroupRds'),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3,ec2.InstanceSize.MICRO),
